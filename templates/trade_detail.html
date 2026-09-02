@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Trade #{{ trade.id }} - AlphaGuard AI{% endblock %}
+{% block content %}
+<div class="section-title">{{ trade.ticker }} · {{ trade.action }}</div>
+<div class="section-sub">Trade #{{ trade.id }} · <span class="badge badge-accent">{{ trade.status }}</span></div>
+
+<div class="grid grid-4 mb-16">
+  <div class="glass-panel card"><div class="card-title">Entry</div><div class="card-value">${{ "%.2f"|format(trade.entry_price or 0) }}</div></div>
+  <div class="glass-panel card"><div class="card-title">Exit</div><div class="card-value">{{ "$%.2f"|format(trade.exit_price) if trade.exit_price else "-" }}</div></div>
+  <div class="glass-panel card"><div class="card-title">P/L</div><div class="card-value {{ 'text-success' if (trade.profit_loss or 0) >= 0 else 'text-danger' }}">{{ "$%.2f"|format(trade.profit_loss) if trade.profit_loss is not none else "-" }}</div></div>
+  <div class="glass-panel card"><div class="card-title">Confidence</div><div class="card-value">{{ trade.confidence or '-' }}%</div></div>
+</div>
+
+<div class="glass-panel card mb-16" id="postmortem-panel"></div>
+
+<div class="glass-panel card">
+  <div class="card-title">Agent Decisions</div>
+  <table class="data-table">
+    <thead><tr><th>Agent</th><th>Decision</th><th>Score</th><th>Reasoning</th></tr></thead>
+    <tbody>
+    {% for d in trade.decisions %}
+      <tr><td><strong>{{ d.agent_name|title }}</strong></td><td>{{ d.decision }}</td><td>{{ d.score }}</td><td style="max-width:400px;">{{ d.reasoning }}</td></tr>
+    {% else %}
+      <tr><td colspan="4" class="empty-state">No agent decisions recorded for this trade.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function loadTradeExtras() {
+  const res = await fetch('/api/trade/{{ trade.id }}');
+  const data = await res.json();
+  const panel = document.getElementById('postmortem-panel');
+  if (data.postmortem) {
+    const pm = data.postmortem;
+    panel.innerHTML = `
+      <div class="card-title">AI Post-Mortem</div>
+      <div class="grid grid-2 mt-8">
+        <div><strong>Prediction:</strong> ${pm.prediction}</div>
+        <div><strong>Actual:</strong> ${pm.actual_outcome}</div>
+      </div>
+      <div class="mt-16"><strong>What worked:</strong> ${pm.what_worked}</div>
+      <div class="mt-8"><strong>What failed:</strong> ${pm.what_failed}</div>
+      <div class="mt-8"><strong>Future adjustment:</strong> ${pm.future_recommendation}</div>
+    `;
+  } else {
+    panel.innerHTML = `<div class="empty-state">Post-mortem will appear once this trade is closed.</div>`;
+  }
+}
+loadTradeExtras();
+</script>
+{% endblock %}

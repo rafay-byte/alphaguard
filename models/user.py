@@ -1,0 +1,29 @@
+from datetime import datetime, timezone
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+from models import db
+
+
+class User(UserMixin, db.Model):
+    __tablename__ = "users"
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    demo_mode = db.Column(db.Boolean, default=True)
+    risk_percent = db.Column(db.Float, default=1.0)
+    max_position_percent = db.Column(db.Float, default=10.0)
+    confidence_threshold = db.Column(db.Float, default=65.0)
+    animations_enabled = db.Column(db.Boolean, default=True)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def __repr__(self):
+        return f"<User {self.username}>"

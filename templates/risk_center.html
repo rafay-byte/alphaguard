@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Risk Center - AlphaGuard AI{% endblock %}
+{% block content %}
+<div class="section-title">Risk Center</div>
+<div class="section-sub">Deterministic risk controls monitored in real time.</div>
+<div class="grid grid-3" id="risk-gauges"></div>
+<div class="glass-panel card mt-16">
+  <div class="card-title">Active Risk Rules</div>
+  <div id="risk-rules" class="grid grid-4 mt-8"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function gaugeClass(status) {
+  return status === 'SAFE' ? 'safe' : (status === 'WARNING' ? 'warning' : 'critical');
+}
+function badgeClass(status) {
+  return status === 'SAFE' ? 'badge-success' : (status === 'WARNING' ? 'badge-warning' : 'badge-danger');
+}
+async function loadRisk() {
+  const res = await fetch('/api/risk');
+  const r = await res.json();
+
+  document.getElementById('risk-gauges').innerHTML = `
+    <div class="glass-panel card gauge-wrap">
+      <div class="card-title">Portfolio Exposure</div>
+      <div class="card-value">${r.exposure_percent}%</div>
+      <div class="gauge-bar"><div class="gauge-fill ${gaugeClass(r.exposure_status)}" style="width:${Math.min(100, r.exposure_percent)}%"></div></div>
+      <span class="badge ${badgeClass(r.exposure_status)}">${r.exposure_status}</span>
+    </div>
+    <div class="glass-panel card gauge-wrap">
+      <div class="card-title">Daily P/L</div>
+      <div class="card-value">${r.daily_loss_percent}%</div>
+      <div class="gauge-bar"><div class="gauge-fill ${gaugeClass(r.daily_loss_status)}" style="width:${Math.min(100, Math.abs(r.daily_loss_percent) * 20)}%"></div></div>
+      <span class="badge ${badgeClass(r.daily_loss_status)}">${r.daily_loss_status}</span>
+    </div>
+    <div class="glass-panel card gauge-wrap">
+      <div class="card-title">Open Positions</div>
+      <div class="card-value">${r.open_positions} / ${r.max_open_positions}</div>
+      <div class="gauge-bar"><div class="gauge-fill safe" style="width:${(r.open_positions / r.max_open_positions) * 100}%"></div></div>
+      <span class="badge badge-accent">TRACKED</span>
+    </div>
+  `;
+
+  document.getElementById('risk-rules').innerHTML = `
+    <div class="card"><div class="card-title">Max Position Size</div><div class="card-value">${r.max_position_percent}%</div></div>
+    <div class="card"><div class="card-title">Max Risk / Trade</div><div class="card-value">${r.max_trade_risk_percent}%</div></div>
+    <div class="card"><div class="card-title">Max Daily Loss</div><div class="card-value">${r.max_daily_loss_percent}%</div></div>
+    <div class="card"><div class="card-title">Max Drawdown</div><div class="card-value">${r.max_drawdown_percent}%</div></div>
+    <div class="card"><div class="card-title">Min Risk/Reward</div><div class="card-value">${r.min_risk_reward}:1</div></div>
+    <div class="card"><div class="card-title">Min AI Confidence</div><div class="card-value">${r.min_confidence}%</div></div>
+  `;
+}
+loadRisk();
+</script>
+{% endblock %}

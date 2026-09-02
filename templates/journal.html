@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}AI Journal - AlphaGuard AI{% endblock %}
+{% block content %}
+<div class="section-title">AI Journal</div>
+<div class="section-sub">Chronological log of every system event, decision, and trade.</div>
+<div class="glass-panel card" id="journal-panel">
+  <div class="empty-state">Loading journal...</div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function sevColor(sev) {
+  return sev === 'SUCCESS' ? '#17a673' : sev === 'CRITICAL' ? '#d94f4f' : sev === 'WARNING' ? '#c9891f' : '#5b5fef';
+}
+async function loadJournal() {
+  const res = await fetch('/api/journal');
+  const data = await res.json();
+  const panel = document.getElementById('journal-panel');
+  if (!data.events.length) {
+    panel.innerHTML = '<div class="empty-state">No events yet. Run a market scan to populate the journal.</div>';
+    return;
+  }
+  panel.innerHTML = data.events.map(e => {
+    const t = new Date(e.timestamp);
+    const time = t.toLocaleTimeString();
+    return `<div class="journal-item fade-in">
+      <div class="journal-time">${time}</div>
+      <div class="journal-dot" style="background:${sevColor(e.severity)};"></div>
+      <div>
+        <div style="font-size:13px;">${e.message}</div>
+        <div style="font-size:11px; color:var(--text-tertiary); margin-top:2px;">${e.event_type}${e.ticker ? ' · ' + e.ticker : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+loadJournal();
+setInterval(loadJournal, 8000);
+</script>
+{% endblock %}

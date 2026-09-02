@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Opportunities - AlphaGuard AI{% endblock %}
+{% block content %}
+<div class="section-title">Market Opportunities</div>
+<div class="section-sub">AI-ranked assets from the monitored watchlist.</div>
+<button class="btn btn-secondary btn-press mb-16" id="refresh-opp-btn">🔄 Refresh Scan</button>
+<div class="grid grid-3" id="opportunities-grid">
+  <div class="glass-panel card"><div class="skeleton" style="height:120px;"></div></div>
+  <div class="glass-panel card"><div class="skeleton" style="height:120px;"></div></div>
+  <div class="glass-panel card"><div class="skeleton" style="height:120px;"></div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/trading.js') }}"></script>
+<script>
+async function loadOpportunities() {
+  const res = await fetch('/api/scan', { method: 'POST' });
+  const data = await res.json();
+  const grid = document.getElementById('opportunities-grid');
+  grid.innerHTML = '';
+  data.opportunities.forEach(o => {
+    const actionColor = o.action === 'BUY' ? 'badge-success' : (o.action === 'HOLD' ? 'badge-warning' : 'badge-neutral');
+    const riskColor = o.risk === 'LOW' ? 'badge-success' : (o.risk === 'MEDIUM' ? 'badge-warning' : 'badge-danger');
+    const card = document.createElement('div');
+    card.className = 'glass-panel opp-card hover-lift fade-in';
+    card.innerHTML = `
+      <div class="opp-header">
+        <div class="opp-ticker">${o.ticker}</div>
+        <span class="badge ${actionColor}">${o.action}</span>
+      </div>
+      <div style="font-size:13px; color:var(--text-secondary);">$${o.price ? o.price.toFixed(2) : '-'} · ${o.confidence}% confidence</div>
+      <div class="opp-scores">
+        <div class="opp-score-pill"><div class="val">${o.technical}</div><div class="lab">Technical</div></div>
+        <div class="opp-score-pill"><div class="val">${o.quant}</div><div class="lab">Quant</div></div>
+        <div class="opp-score-pill"><span class="badge ${riskColor}">${o.risk}</span></div>
+      </div>
+      <div class="flex gap-8 mt-8">
+        <a class="btn btn-secondary btn-sm btn-press" style="flex:1;" href="/decision-room?ticker=${o.ticker}">View AI Analysis</a>
+        <button class="btn btn-primary btn-sm btn-press run-decision" style="flex:1;" data-ticker="${o.ticker}">Run Decision</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  document.querySelectorAll('.run-decision').forEach(btn => {
+    btn.addEventListener('click', () => {
+      window.location.href = `/decision-room?ticker=${btn.dataset.ticker}&auto=1`;
+    });
+  });
+}
+document.getElementById('refresh-opp-btn').addEventListener('click', loadOpportunities);
+loadOpportunities();
+</script>
+{% endblock %}

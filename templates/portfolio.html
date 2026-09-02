@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Portfolio - AlphaGuard AI{% endblock %}
+{% block content %}
+<div class="section-title">Portfolio</div>
+<div class="section-sub">Equity performance and current allocation.</div>
+
+<div class="glass-panel card mb-16">
+  <div class="card-title">Portfolio Equity Curve</div>
+  <canvas id="equity-chart" height="90"></canvas>
+</div>
+
+<div class="grid grid-4 mb-16" id="portfolio-stats"></div>
+
+<div class="glass-panel card">
+  <div class="card-title">Open Positions</div>
+  <table class="data-table" id="positions-table">
+    <thead><tr><th>Ticker</th><th>Qty</th><th>Entry</th><th>Current</th><th>P/L</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/trading.js') }}"></script>
+<script>
+async function loadPortfolio() {
+  const [accRes, histRes, posRes] = await Promise.all([
+    fetch('/api/account'), fetch('/api/portfolio-history'), fetch('/api/positions')
+  ]);
+  const account = await accRes.json();
+  const history = await histRes.json();
+  const positions = (await posRes.json()).positions;
+
+  document.getElementById('portfolio-stats').innerHTML = `
+    <div class="glass-panel card hover-lift"><div class="card-title">Equity</div><div class="card-value">$${account.equity.toFixed(2)}</div></div>
+    <div class="glass-panel card hover-lift"><div class="card-title">Cash</div><div class="card-value">$${account.cash.toFixed(2)}</div></div>
+    <div class="glass-panel card hover-lift"><div class="card-title">Buying Power</div><div class="card-value">$${account.buying_power.toFixed(2)}</div></div>
+    <div class="glass-panel card hover-lift"><div class="card-title">Open Positions</div><div class="card-value">${positions.length}</div></div>
+  `;
+
+  renderEquityChart('equity-chart', history.equity || []);
+
+  const tbody = document.querySelector('#positions-table tbody');
+  tbody.innerHTML = '';
+  if (positions.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No open positions.</td></tr>`;
+  }
+  positions.forEach(p => {
+    const pl = p.unrealized_pl || 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${p.ticker}</strong></td><td>${p.quantity}</td>
+      <td>$${(p.entry_price||0).toFixed(2)}</td><td>$${(p.current_price||0).toFixed(2)}</td>
+      <td class="${pl >= 0 ? 'text-success' : 'text-danger'}">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}</td>
+      <td><button class="btn btn-sm btn-secondary close-pos" data-id="${p.id}">Close</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.querySelectorAll('.close-pos').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await fetch('/api/close-position', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({position_id: parseInt(btn.dataset.id)})
+      });
+      loadPortfolio();
+    });
+  });
+}
+loadPortfolio();
+</script>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Settings - AlphaGuard AI{% endblock %}
+{% block content %}
+<div class="section-title">Settings</div>
+<div class="section-sub">Connection status, safety configuration, and preferences.</div>
+
+<div class="grid grid-2 mb-16">
+  <div class="glass-panel card">
+    <div class="card-title">Alpaca Connection</div>
+    <div class="card-value">{{ 'Connected' if alpaca_configured else 'Not Connected (Demo)' }}</div>
+    <div class="card-sub">Trading mode: <strong>{{ trading_mode }}</strong> - live trading is never enabled automatically.</div>
+  </div>
+  <div class="glass-panel card">
+    <div class="card-title">AI Provider</div>
+    <div class="card-value">{{ 'Live' if ai_configured else 'Demo Mode' }}</div>
+    <div class="card-sub">Set AI_PROVIDER + AI_API_KEY in .env to enable live AI reasoning.</div>
+  </div>
+</div>
+
+<div class="glass-panel card">
+  <div class="card-title">Risk Defaults (from config.py / .env)</div>
+  <div class="grid grid-3 mt-8">
+    <div><span class="text-muted">Max position size:</span> <strong>{{ config.MAX_POSITION_PERCENT if config is defined else '10' }}%</strong></div>
+  </div>
+  <p class="text-muted" style="margin-top:12px; font-size:13px;">
+    This platform is for educational and experimental purposes and does not provide financial advice.
+    All trading happens through Alpaca <strong>paper trading</strong> by default.
+  </p>
+</div>
+{% endblock %}

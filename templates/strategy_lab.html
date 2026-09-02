@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Strategy Lab - AlphaGuard AI{% endblock %}
+{% block content %}
+<div class="section-title">Strategy Lab</div>
+<div class="section-sub">Backtest simple strategies against historical (or demo) data. Simulations only - not a guarantee of future performance.</div>
+
+<div class="glass-panel card mb-16">
+  <div class="grid grid-4">
+    <div class="form-group">
+      <label class="form-label">Ticker</label>
+      <select class="form-input" id="bt-ticker">
+        <option>NVDA</option><option>MSFT</option><option>AAPL</option><option>QQQ</option><option>TSLA</option><option>AMD</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Starting Capital</label>
+      <input class="form-input" id="bt-capital" type="number" value="10000">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Historical Period (days)</label>
+      <input class="form-input" id="bt-days" type="number" value="120">
+    </div>
+    <div class="form-group" style="display:flex; align-items:flex-end;">
+      <button class="btn btn-primary btn-block btn-press" id="run-backtest-btn">Run Backtest</button>
+    </div>
+  </div>
+</div>
+
+<div id="backtest-results" style="display:none;">
+  <div class="glass-panel card mb-16" style="border-left: 3px solid var(--warning);">
+    <strong>Simulation Disclaimer:</strong> This is a historical backtest simulation and does not represent guaranteed future returns.
+  </div>
+  <div class="grid grid-4 mb-16" id="bt-stats"></div>
+  <div class="glass-panel card">
+    <div class="card-title">Equity Curve</div>
+    <canvas id="bt-chart" height="90"></canvas>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+document.getElementById('run-backtest-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('run-backtest-btn');
+  btn.disabled = true; btn.textContent = 'Running...';
+  const res = await fetch('/api/backtest', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      ticker: document.getElementById('bt-ticker').value,
+      starting_capital: parseFloat(document.getElementById('bt-capital').value),
+      days: parseInt(document.getElementById('bt-days').value),
+    })
+  });
+  const data = await res.json();
+  btn.disabled = false; btn.textContent = 'Run Backtest';
+
+  document.getElementById('backtest-results').style.display = 'block';
+  document.getElementById('bt-stats').innerHTML = `
+    <div class="glass-panel card"><div class="card-title">Final Capital</div><div class="card-value">$${data.final_capital.toFixed(2)}</div></div>
+    <div class="glass-panel card"><div class="card-title">Total Return</div><div class="card-value ${data.total_return_percent>=0?'text-success':'text-danger'}">${data.total_return_percent}%</div></div>
+    <div class="glass-panel card"><div class="card-title">Win Rate</div><div class="card-value">${data.win_rate_percent}%</div></div>
+    <div class="glass-panel card"><div class="card-title">Max Drawdown</div><div class="card-value text-danger">${data.max_drawdown_percent}%</div></div>
+  `;
+  renderEquityChart('bt-chart', data.equity_curve);
+});
+</script>
+{% endblock %}

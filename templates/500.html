@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Server Error{% endblock %}
+{% block auth_content %}
+<div class="auth-wrap"><div class="glass-panel auth-card" style="text-align:center;">
+  <div style="font-size:44px;">⚠️</div>
+  <div class="auth-title">Something went wrong</div>
+  <div class="auth-sub">An unexpected server error occurred. It has been logged.</div>
+  <a class="btn btn-primary" href="/">Back to Dashboard</a>
+</div></div>
+{% endblock %}

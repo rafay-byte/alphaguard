@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Decision Room - AlphaGuard AI{% endblock %}
+{% block content %}
+<div class="section-title">AI Investment Committee</div>
+<div class="section-sub">Watch the multi-agent debate unfold in real time.</div>
+
+<div class="glass-panel card mb-16">
+  <div class="flex gap-12 items-center">
+    <select class="form-input" id="ticker-select" style="max-width:180px;">
+      <option value="NVDA">NVDA</option>
+      <option value="MSFT">MSFT</option>
+      <option value="AAPL">AAPL</option>
+      <option value="QQQ">QQQ</option>
+      <option value="TSLA">TSLA</option>
+      <option value="AMD">AMD</option>
+    </select>
+    <button class="btn btn-primary btn-press" id="run-committee-btn">🧠 Run Investment Committee</button>
+  </div>
+</div>
+
+<div class="glass-panel card mb-16">
+  <div class="agent-flow" id="agent-flow">
+    <div class="agent-card" data-agent="market"><div class="flex items-center"><div class="agent-icon">M</div><div class="agent-meta"><div class="agent-name">Market Analyst</div><div class="agent-reasoning">Awaiting analysis...</div></div></div><div class="agent-status-label waiting">WAITING</div></div>
+    <div class="agent-card" data-agent="quant"><div class="flex items-center"><div class="agent-icon">Q</div><div class="agent-meta"><div class="agent-name">Quant Analyst</div><div class="agent-reasoning">Awaiting analysis...</div></div></div><div class="agent-status-label waiting">WAITING</div></div>
+    <div class="agent-card" data-agent="news"><div class="flex items-center"><div class="agent-icon">N</div><div class="agent-meta"><div class="agent-name">News Intelligence</div><div class="agent-reasoning">Awaiting analysis...</div></div></div><div class="agent-status-label waiting">WAITING</div></div>
+    <div class="agent-card" data-agent="bull"><div class="flex items-center"><div class="agent-icon">🐂</div><div class="agent-meta"><div class="agent-name">Bull Agent</div><div class="agent-reasoning">Awaiting analysis...</div></div></div><div class="agent-status-label waiting">WAITING</div></div>
+    <div class="agent-card" data-agent="bear"><div class="flex items-center"><div class="agent-icon">🐻</div><div class="agent-meta"><div class="agent-name">Bear Agent</div><div class="agent-reasoning">Awaiting analysis...</div></div></div><div class="agent-status-label waiting">WAITING</div></div>
+    <div class="agent-card" data-agent="alternative"><div class="flex items-center"><div class="agent-icon">⇄</div><div class="agent-meta"><div class="agent-name">Alternative Agent</div><div class="agent-reasoning">Awaiting analysis...</div></div></div><div class="agent-status-label waiting">WAITING</div></div>
+    <div class="agent-card" data-agent="strategy"><div class="flex items-center"><div class="agent-icon">S</div><div class="agent-meta"><div class="agent-name">Strategy Agent</div><div class="agent-reasoning">Awaiting analysis...</div></div></div><div class="agent-status-label waiting">WAITING</div></div>
+    <div class="agent-card" data-agent="risk"><div class="flex items-center"><div class="agent-icon">🛡️</div><div class="agent-meta"><div class="agent-name">Risk Engine</div><div class="agent-reasoning">Deterministic - runs after committee decision</div></div></div><div class="agent-status-label waiting">WAITING</div></div>
+  </div>
+</div>
+
+<div id="final-decision-wrap"></div>
+<div id="execution-wrap"></div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/agents.js') }}"></script>
+<script src="{{ url_for('static', filename='js/trading.js') }}"></script>
+<script src="{{ url_for('static', filename='js/decision-room.js') }}"></script>
+{% endblock %}

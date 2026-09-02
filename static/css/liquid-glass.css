@@ -1,0 +1,110 @@
+/* ==========================================================================
+   Liquid Glass specific components: hero, decision room, agent cards
+   ========================================================================== */
+
+.hero-glass {
+  position: relative;
+  padding: 34px 36px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.45));
+}
+.hero-glass::before {
+  content: "";
+  position: absolute; inset: -40% -10% auto auto; width: 320px; height: 320px;
+  background: radial-gradient(circle, rgba(124,108,245,0.28), transparent 70%);
+  filter: blur(10px);
+}
+.hero-title { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; margin: 0 0 6px; }
+.hero-status-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 22px; }
+
+.status-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+  background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* ---------- Agent flow / decision room ---------- */
+.agent-flow { display: flex; flex-direction: column; gap: 10px; }
+.agent-card {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px; border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.55); border: 1px solid rgba(255,255,255,0.6);
+  transition: all 0.25s ease;
+}
+.agent-card.analyzing { background: rgba(91,95,239,0.10); border-color: rgba(91,95,239,0.35); }
+.agent-card.complete { background: rgba(23,166,115,0.08); border-color: rgba(23,166,115,0.30); }
+
+.agent-icon {
+  width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff; font-weight: 700; font-size: 14px;
+}
+.agent-card.complete .agent-icon { background: linear-gradient(135deg, #22c58f, #17a673); }
+
+.agent-meta { flex: 1; margin-left: 14px; }
+.agent-name { font-weight: 700; font-size: 14px; }
+.agent-reasoning { font-size: 12.5px; color: var(--text-secondary); margin-top: 3px; max-width: 520px; }
+
+.agent-status-label { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.agent-status-label.waiting { color: var(--text-tertiary); }
+.agent-status-label.analyzing { color: var(--accent); }
+.agent-status-label.complete { color: var(--success); }
+
+.agent-spinner {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid rgba(91,95,239,0.25); border-top-color: var(--accent);
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.final-decision-card {
+  text-align: center; padding: 34px; margin-top: 18px;
+}
+.final-decision-action { font-size: 34px; font-weight: 800; letter-spacing: -0.03em; }
+.final-decision-action.buy { color: var(--success); }
+.final-decision-action.hold { color: var(--warning); }
+.final-decision-action.no-trade { color: var(--text-secondary); }
+
+/* ---------- Confidence meter ---------- */
+.confidence-meter { width: 100%; height: 8px; border-radius: 999px; background: rgba(0,0,0,0.06); overflow: hidden; }
+.confidence-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.6s ease; }
+
+/* ---------- Execution timeline ---------- */
+.exec-timeline { display: flex; flex-direction: column; gap: 0; }
+.exec-step { display: flex; gap: 14px; padding: 10px 0; position: relative; }
+.exec-step::before {
+  content: ""; position: absolute; left: 10px; top: 30px; bottom: -10px; width: 2px;
+  background: rgba(0,0,0,0.08);
+}
+.exec-step:last-child::before { display: none; }
+.exec-dot {
+  width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,0.08);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; z-index: 1;
+}
+.exec-step.done .exec-dot { background: var(--success); }
+.exec-step.active .exec-dot { background: var(--accent); animation: pulseDot 1.2s infinite; }
+.exec-label { font-weight: 600; font-size: 13.5px; }
+.exec-time { font-size: 11.5px; color: var(--text-tertiary); }
+
+/* ---------- Risk gauges ---------- */
+.gauge-wrap { text-align: center; }
+.gauge-bar { width: 100%; height: 10px; border-radius: 999px; background: rgba(0,0,0,0.06); overflow: hidden; margin: 10px 0 6px; }
+.gauge-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
+.gauge-fill.safe { background: var(--success); }
+.gauge-fill.warning { background: var(--warning); }
+.gauge-fill.critical { background: var(--danger); }
+
+/* ---------- Opportunity cards ---------- */
+.opp-card { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+.opp-header { display: flex; align-items: center; justify-content: space-between; }
+.opp-ticker { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+.opp-scores { display: flex; gap: 10px; margin-top: 4px; }
+.opp-score-pill { flex: 1; text-align: center; background: rgba(0,0,0,0.03); border-radius: 10px; padding: 6px 4px; }
+.opp-score-pill .val { font-weight: 700; font-size: 14px; }
+.opp-score-pill .lab { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; }
+
+/* ---------- Journal timeline ---------- */
+.journal-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+.journal-time { font-size: 11.5px; color: var(--text-tertiary); width: 70px; flex-shrink: 0; padding-top: 2px; }
+.journal-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
