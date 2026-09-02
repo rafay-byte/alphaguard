@@ -102,16 +102,21 @@ class AIService:
         return "".join(b.get("text", "") for b in content if b.get("type") == "text")
 
     def _call_gemini(self, system_prompt, user_prompt):
-        resp = requests.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.api_key}",
-            json={
-                "contents": [{"parts": [{"text": system_prompt + "\n\n" + user_prompt}]}],
-                "generationConfig": {"response_mime_type": "application/json"},
-            },
-            timeout=30,
-        )
-        resp.raise_for_status()
-        return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+        for model in ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.5-pro", "gemini-2.5-flash-lite"]:
+            try:
+                resp = requests.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={self.api_key}",
+                    json={
+                        "contents": [{"parts": [{"text": system_prompt + "\n\n" + user_prompt}]}],
+                        "generationConfig": {"response_mime_type": "application/json"},
+                    },
+                    timeout=20,
+                )
+                if resp.status_code == 200:
+                    return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+            except Exception:
+                continue
+        raise RuntimeError("All Gemini model endpoints failed or were rate-limited.")
 
     def generate_postmortem_narrative(self, trade_dict, base):
         system = "You are a disciplined trading post-mortem analyst. Respond ONLY with JSON."
