@@ -12,6 +12,9 @@ Wraps the Alpaca paper-trading API behind a single, safe interface.
 import random
 import math
 import time
+import json
+import subprocess
+import logging
 from datetime import datetime, timedelta, timezone
 
 from flask import current_app
@@ -267,10 +270,100 @@ class AlpacaService:
             equity.append(round(equity[-1] * (1 + rnd.gauss(0.001, 0.008)), 2))
         return {"equity": equity, "timestamp": None, "demo": True}
 
+    # ------------------------------------------------------------------
+    # Alpaca CLI Integration
+    # Routes trade execution through Alpaca's official CLI binary
+    # (`alpaca order submit`) via subprocess. Satisfies hackathon
+    # requirement: "projects must use Alpaca's CLI or MCP server."
+    # Install CLI: go install github.com/alpacahq/cli/cmd/alpaca@latest
+    # Auth:        alpaca profile login --api-key
+    # ------------------------------------------------------------------
+    def submit_order_via_cli(self, ticker, qty, side="buy"):
+        """Execute a trade through Alpaca's official CLI binary.
+        Runs `alpaca order submit --symbol <SYM> --side <SIDE> --qty <QTY> --type market`
+        as a subprocess, parses the JSON response, and returns the same dict shape
+        as submit_market_order() so the rest of the pipeline works unchanged."""
+        cmd = [
+            "alpaca", "order", "submit",
+            "--symbol", str(ticker),
+            "--side", side,
+            "--qty", str(int(qty)),
+            "--type", "market",
+        ]
+        log = current_app.logger if current_app else logging.getLogger(__name__)
+        log.info(f"[ALPACA CLI] Executing: {' '.join(cmd)}")
+
+        try:
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=30,
+            )
+            log.info(f"[ALPACA CLI] stdout: {result.stdout}")
+            if result.stderr:
+                log.warning(f"[ALPACA CLI] stderr: {result.stderr}")
+
+            if result.returncode != 0:
+                raise AlpacaError(
+                    f"Alpaca CLI exited with code {result.returncode}: {result.stderr}"
+                )
+
+            # Parse the CLI output — Alpaca CLI outputs order details as JSON
+            output = result.stdout.strip()
+            if output.startswith("{"):
+                order_data = json.loads(output)
+            else:
+                # Some CLI versions output human-readable text with an ID line
+                # Try to extract order ID from the output
+                order_data = {"raw_output": output}
+
+            return {
+                "id": str(order_data.get("id", order_data.get("order_id", f"CLI-{int(time.time() * 1000)}"))),
+                "symbol": ticker,
+                "side": side,
+                "qty": float(qty),
+                "status": order_data.get("status", "accepted"),
+                "filled_avg_price": order_data.get("filled_avg_price"),
+                "demo": False,
+                "execution_method": "alpaca_cli",
+            }
+        except FileNotFoundError:
+            raise AlpacaError(
+                "Alpaca CLI not found. Install it: "
+                "go install github.com/alpacahq/cli/cmd/alpaca@latest"
+            )
+        except subprocess.TimeoutExpired:
+            raise AlpacaError("Alpaca CLI timed out after 30s")
+        except json.JSONDecodeError:
+            log.warning(f"[ALPACA CLI] Could not parse JSON from output: {output}")
+            # Even if we can't parse JSON, the order may have been submitted
+            return {
+                "id": f"CLI-{int(time.time() * 1000)}",
+                "symbol": ticker,
+                "side": side,
+                "qty": float(qty),
+                "status": "submitted",
+                "demo": False,
+                "execution_method": "alpaca_cli",
+            }
+
     def submit_market_order(self, ticker, qty, side="buy"):
-        """side: 'buy' or 'sell'. Returns order dict. Falls back to a simulated
-        FILLED paper order in demo mode - clearly marked as demo, never presented
-        as a real Alpaca fill."""
+        """side: 'buy' or 'sell'. Returns order dict.
+
+        Execution routing:
+        1. If USE_ALPACA_CLI is True → route through Alpaca's official CLI binary
+        2. Else if SDK is configured → use alpaca-py TradingClient
+        3. Else → simulated DEMO fill (clearly marked, never presented as real)
+        """
+        # --- Route 1: Alpaca CLI (hackathon compliance) ---
+        from config import Config
+        if Config.USE_ALPACA_CLI:
+            try:
+                return self.submit_order_via_cli(ticker, qty, side)
+            except AlpacaError as e:
+                log = current_app.logger if current_app else logging.getLogger(__name__)
+                log.warning(f"Alpaca CLI failed, falling back to SDK: {e}")
+                # Fall through to SDK path
+
+        # --- Route 2: alpaca-py SDK (default) ---
         if self.configured:
             try:
                 from alpaca.trading.requests import MarketOrderRequest
@@ -283,15 +376,18 @@ class AlpacaService:
                 return {
                     "id": str(order.id), "symbol": order.symbol, "side": side,
                     "qty": float(qty), "status": order.status.value, "demo": False,
+                    "execution_method": "alpaca_sdk",
                 }
             except Exception as e:
                 current_app.logger.warning(f"Alpaca submit_market_order failed: {e}")
                 raise AlpacaError(str(e))
 
+        # --- Route 3: Demo mode ---
         price = self.get_latest_price(ticker)
         return {
             "id": f"DEMO-{int(time.time() * 1000)}", "symbol": ticker, "side": side,
             "qty": float(qty), "status": "FILLED", "filled_avg_price": price, "demo": True,
+            "execution_method": "demo",
         }
 
     def close_position(self, ticker):

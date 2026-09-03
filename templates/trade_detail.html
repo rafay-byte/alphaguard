@@ -11,42 +11,122 @@
   <div class="glass-panel card"><div class="card-title">Confidence</div><div class="card-value">{{ trade.confidence or '-' }}%</div></div>
 </div>
 
-<div class="glass-panel card mb-16" id="postmortem-panel"></div>
-
+<!-- TABBED DETAIL VIEW -->
 <div class="glass-panel card">
-  <div class="card-title">Agent Decisions</div>
-  <table class="data-table">
-    <thead><tr><th>Agent</th><th>Decision</th><th>Score</th><th>Reasoning</th></tr></thead>
-    <tbody>
-    {% for d in trade.decisions %}
-      <tr><td><strong>{{ d.agent_name|title }}</strong></td><td>{{ d.decision }}</td><td>{{ d.score }}</td><td style="max-width:400px;">{{ d.reasoning }}</td></tr>
-    {% else %}
-      <tr><td colspan="4" class="empty-state">No agent decisions recorded for this trade.</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
+  <div class="detail-tabs" id="trade-tabs">
+    <div class="detail-tab active" data-tab="agents">Agent Decisions</div>
+    <div class="detail-tab" data-tab="risk">Risk Audit</div>
+    <div class="detail-tab" data-tab="postmortem">Post-Mortem</div>
+  </div>
+
+  <!-- TAB: Agent Decisions -->
+  <div class="detail-tab-content active" id="tab-agents">
+    <table class="data-table">
+      <thead><tr><th>Agent</th><th>Decision</th><th>Score</th><th>Reasoning</th></tr></thead>
+      <tbody>
+      {% for d in trade.decisions %}
+        <tr><td><strong>{{ d.agent_name|title }}</strong></td><td>{{ d.decision }}</td><td>{{ d.score }}</td><td style="max-width:400px;">{{ d.reasoning }}</td></tr>
+      {% else %}
+        <tr><td colspan="4" class="empty-state">No agent decisions recorded for this trade.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- TAB: Risk Audit -->
+  <div class="detail-tab-content" id="tab-risk">
+    <div id="risk-audit-panel">
+      <div class="empty-state">Risk audit data will appear here.</div>
+    </div>
+  </div>
+
+  <!-- TAB: Post-Mortem -->
+  <div class="detail-tab-content" id="tab-postmortem">
+    <div id="postmortem-panel"></div>
+  </div>
 </div>
 {% endblock %}
 {% block scripts %}
 <script>
+// Tab switching
+document.querySelectorAll('.detail-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.detail-tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
 async function loadTradeExtras() {
   const res = await fetch('/api/trade/{{ trade.id }}');
   const data = await res.json();
+
+  // --- Risk Audit Tab ---
+  const riskPanel = document.getElementById('risk-audit-panel');
+  if (data.risk_checks && data.risk_checks.length > 0) {
+    const rc = data.risk_checks[0];
+    const reasons = (rc.reasons || '').split('\n').filter(r => r.trim());
+    riskPanel.innerHTML = `
+      <div style="margin-bottom:12px;">
+        <span class="badge ${rc.approved ? 'badge-success' : 'badge-danger'}" style="font-size:13px; padding:6px 14px;">
+          ${rc.approved ? 'RISK APPROVED' : 'RISK REJECTED'}
+        </span>
+      </div>
+      <div class="grid grid-3 mb-16">
+        <div><div class="card-title">Position Size</div><div class="card-value">${rc.position_size || '-'}</div></div>
+        <div><div class="card-title">Risk %</div><div class="card-value">${rc.risk_percent || '-'}%</div></div>
+        <div><div class="card-title">Risk/Reward</div><div class="card-value">${rc.risk_reward || '-'}:1</div></div>
+      </div>
+      <div>
+        ${reasons.map(r => `<div style="padding:4px 0; font-size:13px; color:var(--text-secondary);">• ${r}</div>`).join('')}
+      </div>
+    `;
+  } else {
+    riskPanel.innerHTML = '<div class="empty-state">No risk audit records for this trade.</div>';
+  }
+
+  // --- Post-Mortem Tab ---
   const panel = document.getElementById('postmortem-panel');
   if (data.postmortem) {
     const pm = data.postmortem;
+    const workedItems = Array.isArray(pm.what_worked) ? pm.what_worked : [pm.what_worked];
+    const failedItems = Array.isArray(pm.what_failed) ? pm.what_failed : [pm.what_failed];
+    const lesson = pm.lesson || pm.future_recommendation || '';
+
+    const returnClass = pm.profit_loss >= 0 ? 'text-success' : 'text-danger';
+    const outcomeLabel = pm.outcome_label || (pm.profit_loss >= 0 ? 'SUCCESS' : 'LOSS');
+    const outcomeBadge = pm.profit_loss >= 0 ? 'badge-success' : 'badge-danger';
+
     panel.innerHTML = `
-      <div class="card-title">AI Post-Mortem</div>
-      <div class="grid grid-2 mt-8">
-        <div><strong>Prediction:</strong> ${pm.prediction}</div>
-        <div><strong>Actual:</strong> ${pm.actual_outcome}</div>
+      <div class="grid grid-4 mb-16">
+        <div><div class="card-title">Entry</div><div class="card-value">$${(pm.entry_price || 0).toFixed(2)}</div></div>
+        <div><div class="card-title">Exit</div><div class="card-value">$${(pm.exit_price || 0).toFixed(2)}</div></div>
+        <div><div class="card-title">Return</div><div class="card-value ${returnClass}">${pm.return_pct >= 0 ? '+' : ''}${pm.return_pct || 0}%</div></div>
+        <div><div class="card-title">Outcome</div><div class="card-value"><span class="badge ${outcomeBadge}">${outcomeLabel}</span></div></div>
       </div>
-      <div class="mt-16"><strong>What worked:</strong> ${pm.what_worked}</div>
-      <div class="mt-8"><strong>What failed:</strong> ${pm.what_failed}</div>
-      <div class="mt-8"><strong>Future adjustment:</strong> ${pm.future_recommendation}</div>
+      <div class="grid grid-2 mb-16">
+        <div><div class="card-title">Original Confidence</div><div class="card-value">${pm.confidence_was || '-'}%</div></div>
+        <div><div class="card-title">Prediction</div><div class="card-value">${pm.prediction} → ${pm.actual_outcome} ${pm.prediction_accurate ? '✓' : '✕'}</div></div>
+      </div>
+
+      <div class="pm-section">
+        <div class="pm-section-title worked">✓ What Worked</div>
+        ${workedItems.map(w => `<div class="pm-item"><span class="pm-icon check">✓</span> ${w}</div>`).join('')}
+      </div>
+
+      <div class="pm-section">
+        <div class="pm-section-title failed">⚠ What Failed</div>
+        ${failedItems.map(f => `<div class="pm-item"><span class="pm-icon warn">⚠</span> ${f}</div>`).join('')}
+      </div>
+
+      <div class="pm-section">
+        <div class="pm-section-title lesson">💡 Lesson Learned</div>
+        <div class="pm-lesson-box">${lesson}</div>
+      </div>
     `;
   } else {
-    panel.innerHTML = `<div class="empty-state">Post-mortem will appear once this trade is closed.</div>`;
+    panel.innerHTML = '<div class="empty-state">Post-mortem will appear once this trade is closed.</div>';
   }
 }
 loadTradeExtras();

@@ -28,6 +28,18 @@ class Config:
     ALPACA_BASE_URL = os.environ.get("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
     ALPACA_CONFIGURED = bool(ALPACA_API_KEY and ALPACA_SECRET_KEY)
 
+    # --- Alpaca CLI Integration ---
+    # When True, trade execution routes through Alpaca's official CLI binary
+    # (`alpaca order submit ...`) via subprocess, satisfying the hackathon
+    # requirement to use Alpaca's CLI. Falls back to SDK if CLI call fails.
+    USE_ALPACA_CLI = _bool(os.environ.get("USE_ALPACA_CLI", "false"))
+
+    # --- Alpaca MCP Server Integration ---
+    # When True, the Market Analyst agent pulls live account context
+    # (equity, positions) from Alpaca's official MCP server over stdio.
+    # Requires: uvx (pip install uv) and alpaca-mcp-server on PyPI.
+    USE_ALPACA_MCP = _bool(os.environ.get("USE_ALPACA_MCP", "false"))
+
     # --- AI Provider ---
     AI_PROVIDER = os.environ.get("AI_PROVIDER", "openai").strip().lower()
     AI_API_KEY = os.environ.get("AI_API_KEY", "").strip()

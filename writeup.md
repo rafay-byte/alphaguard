@@ -32,9 +32,10 @@ If the AI Committee votes "BUY", the proposal hits the **Risk Engine**. This is 
 If any check fails, the trade is rejected and logged. Only if all 10 pass does the trade proceed.
 
 ## Alpaca Infrastructure
-We heavily leverage Alpaca for data, execution, and agent tooling:
+We leverage Alpaca's full product suite — API, CLI, and MCP server — for data, execution, and agent tooling:
 - **Alpaca Trading API:** Used via `alpaca-py` to submit options orders, monitor open positions, and execute stop-loss / take-profit exits.
 - **Alpaca Options Data API:** Provides the option chains, strikes, expirations, and latest premium quotes used by the Strategy Agent to select the optimal contract.
-- **Alpaca MCP Server:** We integrated `@ideadesignmedia/alpaca-mcp` via the Model Context Protocol (MCP). This exposes Alpaca's live trading and market data endpoints directly to the AI agents as callable tools, allowing the agents to pull live account context without hardcoded API wrappers.
+- **Alpaca CLI Integration:** Trade execution can be routed through Alpaca's official CLI binary (`alpaca order submit --symbol <OCC_SYMBOL> --side buy --qty <N> --type market`) via subprocess, making every order auditable in the terminal. Controlled by `USE_ALPACA_CLI=true`. The SDK path remains as fallback.
+- **Alpaca MCP Server (Official):** The Market Analyst agent connects to Alpaca's official `alpaca-mcp-server` (github.com/alpacahq/alpaca-mcp-server) over stdio using the Model Context Protocol. It pulls live account context (equity, buying power, open positions) directly into the agent's analysis prompt, giving the AI portfolio awareness before recommending trades. Controlled by `USE_ALPACA_MCP=true`.
 - **Background Position Monitor:** An `APScheduler` job runs constantly, fetching live quotes via Alpaca to manage active options positions and trigger exits autonomously.
 ]]>

@@ -2,7 +2,7 @@
 {% block title %}Decision Room - AlphaGuard AI{% endblock %}
 {% block content %}
 <div class="section-title">AI Investment Committee</div>
-<div class="section-sub">Watch the multi-agent debate unfold in real time.</div>
+<div class="section-sub">Watch the multi-agent debate unfold in real time. Select a ticker and run the full committee pipeline.</div>
 
 <div class="glass-panel card mb-16">
   <div class="flex gap-12 items-center">
@@ -18,7 +18,53 @@
   </div>
 </div>
 
+<!-- PIPELINE GRAPH -->
 <div class="glass-panel card mb-16">
+  <div class="pipeline-graph" id="pipeline-graph">
+    <div class="pipeline-node" data-agent="market">
+      <div class="pipeline-node-icon">📊</div>
+      <div class="pipeline-node-label">Market</div>
+    </div>
+    <div class="pipeline-arrow" data-arrow="0"></div>
+    <div class="pipeline-node" data-agent="quant">
+      <div class="pipeline-node-icon">📐</div>
+      <div class="pipeline-node-label">Quant</div>
+    </div>
+    <div class="pipeline-arrow" data-arrow="1"></div>
+    <div class="pipeline-node" data-agent="news">
+      <div class="pipeline-node-icon">📰</div>
+      <div class="pipeline-node-label">News</div>
+    </div>
+    <div class="pipeline-arrow" data-arrow="2"></div>
+    <div class="pipeline-node" data-agent="bull">
+      <div class="pipeline-node-icon">🐂</div>
+      <div class="pipeline-node-label">Bull</div>
+    </div>
+    <div class="pipeline-arrow" data-arrow="3"></div>
+    <div class="pipeline-node" data-agent="bear">
+      <div class="pipeline-node-icon">🐻</div>
+      <div class="pipeline-node-label">Bear</div>
+    </div>
+    <div class="pipeline-arrow" data-arrow="4"></div>
+    <div class="pipeline-node" data-agent="alternative">
+      <div class="pipeline-node-icon">⇄</div>
+      <div class="pipeline-node-label">Alt</div>
+    </div>
+    <div class="pipeline-arrow" data-arrow="5"></div>
+    <div class="pipeline-node" data-agent="strategy">
+      <div class="pipeline-node-icon">🎯</div>
+      <div class="pipeline-node-label">Strategy</div>
+    </div>
+    <div class="pipeline-arrow" data-arrow="6"></div>
+    <div class="pipeline-node" data-agent="risk">
+      <div class="pipeline-node-icon">🛡️</div>
+      <div class="pipeline-node-label">Risk Gate</div>
+    </div>
+  </div>
+</div>
+
+<!-- AGENT DETAIL CARDS (collapsible, shows reasoning) -->
+<div class="glass-panel card mb-16" id="agent-detail-panel" style="display:none;">
   <div class="agent-flow" id="agent-flow">
     <div class="agent-card" data-agent="market"><div class="flex items-center"><div class="agent-icon">M</div><div class="agent-meta"><div class="agent-name">Market Analyst</div><div class="agent-reasoning">Awaiting analysis...</div></div></div><div class="agent-status-label waiting">WAITING</div></div>
     <div class="agent-card" data-agent="quant"><div class="flex items-center"><div class="agent-icon">Q</div><div class="agent-meta"><div class="agent-name">Quant Analyst</div><div class="agent-reasoning">Awaiting analysis...</div></div></div><div class="agent-status-label waiting">WAITING</div></div>
@@ -31,6 +77,10 @@
   </div>
 </div>
 
+<!-- CONFIDENCE BREAKDOWN + DEBATE + RISK MATRIX + FINAL DECISION -->
+<div id="confidence-wrap"></div>
+<div id="debate-wrap"></div>
+<div id="risk-matrix-wrap"></div>
 <div id="final-decision-wrap"></div>
 <div id="execution-wrap"></div>
 {% endblock %}

@@ -1,5 +1,6 @@
 /* ==========================================================================
-   Liquid Glass specific components: hero, decision room, agent cards
+   Liquid Glass specific components: hero, decision room, agent cards,
+   pipeline graph, confidence breakdown, risk matrix, debate cards
    ========================================================================== */
 
 .hero-glass {
@@ -23,7 +24,479 @@
   background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.05);
 }
 
-/* ---------- Agent flow / decision room ---------- */
+/* ========== PIPELINE GRAPH ========== */
+.pipeline-graph {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 24px 16px;
+  overflow-x: auto;
+  justify-content: center;
+}
+
+.pipeline-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 90px;
+  cursor: default;
+  position: relative;
+}
+
+.pipeline-node-icon {
+  width: 52px; height: 52px;
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  background: rgba(255,255,255,0.7);
+  border: 2px solid rgba(0,0,0,0.08);
+  transition: all 0.4s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.pipeline-node.analyzing .pipeline-node-icon {
+  background: rgba(91,95,239,0.15);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(91,95,239,0.12);
+  animation: pipelinePulse 1.5s ease-in-out infinite;
+}
+
+.pipeline-node.complete .pipeline-node-icon {
+  background: linear-gradient(135deg, #22c58f, #17a673);
+  border-color: var(--success);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(23,166,115,0.3);
+}
+
+.pipeline-node.rejected .pipeline-node-icon {
+  background: linear-gradient(135deg, #e85d5d, #d94f4f);
+  border-color: var(--danger);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(217,79,79,0.3);
+}
+
+.pipeline-node-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  margin-top: 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pipeline-node.analyzing .pipeline-node-label { color: var(--accent); }
+.pipeline-node.complete .pipeline-node-label { color: var(--success); }
+.pipeline-node.rejected .pipeline-node-label { color: var(--danger); }
+
+.pipeline-arrow {
+  width: 32px;
+  height: 2px;
+  background: rgba(0,0,0,0.1);
+  position: relative;
+  margin-top: -20px;
+  flex-shrink: 0;
+}
+
+.pipeline-arrow::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: -3px;
+  border: 4px solid transparent;
+  border-left-color: rgba(0,0,0,0.15);
+}
+
+.pipeline-arrow.active {
+  background: var(--accent);
+}
+.pipeline-arrow.active::after {
+  border-left-color: var(--accent);
+}
+.pipeline-arrow.done {
+  background: var(--success);
+}
+.pipeline-arrow.done::after {
+  border-left-color: var(--success);
+}
+
+@keyframes pipelinePulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(91,95,239,0.12); }
+  50% { box-shadow: 0 0 0 8px rgba(91,95,239,0.2); }
+}
+
+/* ========== CONFIDENCE BREAKDOWN ========== */
+.confidence-breakdown {
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.6);
+  border-radius: var(--radius-md);
+  padding: 20px 22px;
+  margin-top: 16px;
+}
+
+.confidence-breakdown .cb-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: 16px;
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  padding: 7px 0;
+  gap: 12px;
+}
+
+.score-row .score-label {
+  width: 120px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.score-row .score-bar-track {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+
+.score-row .score-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s ease;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+.score-row .score-bar-fill.high { background: linear-gradient(90deg, var(--success), #22c58f); }
+.score-row .score-bar-fill.low { background: linear-gradient(90deg, var(--danger), #e85d5d); }
+.score-row .score-bar-fill.medium { background: linear-gradient(90deg, var(--warning), #e5a42d); }
+.score-row .score-bar-fill.bull { background: linear-gradient(90deg, #22c58f, #17a673); }
+.score-row .score-bar-fill.bear { background: linear-gradient(90deg, #d94f4f, #e85d5d); }
+
+.score-row .score-value {
+  width: 42px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.composite-score-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.composite-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+}
+
+.composite-value {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+
+.composite-decision {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: 999px;
+}
+
+.composite-decision.buy { background: var(--success-soft); color: var(--success); }
+.composite-decision.hold { background: var(--warning-soft); color: var(--warning); }
+.composite-decision.no-trade { background: rgba(0,0,0,0.06); color: var(--text-secondary); }
+
+/* ========== BULL / BEAR DEBATE CARDS ========== */
+.debate-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.debate-card {
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.6);
+}
+
+.debate-card.bull {
+  border-left: 3px solid var(--success);
+}
+
+.debate-card.bear {
+  border-left: 3px solid var(--danger);
+}
+
+.debate-card .debate-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.debate-card .debate-icon {
+  font-size: 18px;
+}
+
+.debate-card .debate-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.debate-card.bull .debate-title { color: var(--success); }
+.debate-card.bear .debate-title { color: var(--danger); }
+
+.debate-card .debate-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+/* ========== RISK MATRIX ========== */
+.risk-matrix {
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.6);
+  border-radius: var(--radius-md);
+  padding: 20px 22px;
+  margin-top: 16px;
+}
+
+.risk-matrix .rm-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: 14px;
+}
+
+.risk-check-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+
+.risk-check-item:last-child { border-bottom: none; }
+
+.risk-check-icon {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.risk-check-icon.pass { background: var(--success-soft); color: var(--success); }
+.risk-check-icon.fail { background: var(--danger-soft); color: var(--danger); }
+
+.risk-check-name { font-size: 13px; font-weight: 600; flex: 1; }
+.risk-check-detail { font-size: 12px; color: var(--text-secondary); text-align: right; max-width: 260px; }
+
+.risk-matrix-summary {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.risk-matrix-summary .rm-count {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.risk-matrix-summary .rm-verdict {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: 999px;
+}
+
+.rm-verdict.approved { background: var(--success-soft); color: var(--success); }
+.rm-verdict.rejected { background: var(--danger-soft); color: var(--danger); }
+
+/* ========== WHY NOT TRADE CARD ========== */
+.why-not-card {
+  background: rgba(201,137,31,0.06);
+  border: 1px solid rgba(201,137,31,0.2);
+  border-radius: var(--radius-md);
+  padding: 22px 24px;
+  margin-top: 16px;
+}
+
+.why-not-card .wnc-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.why-not-card .wnc-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--warning);
+}
+
+.why-not-card .wnc-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-bottom: 12px;
+}
+
+.why-not-card .wnc-reason {
+  display: flex;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.why-not-card .wnc-reason .wnc-dot {
+  color: var(--warning);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ========== PORTFOLIO EXPOSURE BARS ========== */
+.exposure-bar-wrap {
+  margin-bottom: 8px;
+}
+
+.exposure-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.exposure-bar-label .ebl-name { color: var(--text-secondary); }
+.exposure-bar-label .ebl-pct { color: var(--text-primary); font-weight: 700; }
+
+.exposure-bar-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+
+.exposure-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+.exposure-bar-fill.tech { background: linear-gradient(90deg, #5b5fef, #7c6cf5); }
+.exposure-bar-fill.index { background: linear-gradient(90deg, #17a673, #22c58f); }
+.exposure-bar-fill.auto { background: linear-gradient(90deg, #e85d5d, #d94f4f); }
+.exposure-bar-fill.media { background: linear-gradient(90deg, #c9891f, #e5a42d); }
+.exposure-bar-fill.other { background: linear-gradient(90deg, #6b7280, #9aa1ae); }
+.exposure-bar-fill.cash { background: linear-gradient(90deg, #9aa1ae, #c5c9d4); }
+
+/* ========== POSTMORTEM STRUCTURED ========== */
+.pm-section {
+  margin-bottom: 16px;
+}
+
+.pm-section .pm-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+}
+
+.pm-section .pm-section-title.worked { color: var(--success); }
+.pm-section .pm-section-title.failed { color: var(--danger); }
+.pm-section .pm-section-title.lesson { color: var(--accent); }
+
+.pm-item {
+  display: flex;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.pm-item .pm-icon { flex-shrink: 0; font-weight: 700; }
+.pm-item .pm-icon.check { color: var(--success); }
+.pm-item .pm-icon.warn { color: var(--danger); }
+
+.pm-lesson-box {
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+/* ========== TRADE DETAIL TABS ========== */
+.detail-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  margin-bottom: 20px;
+}
+
+.detail-tab {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.detail-tab:hover { color: var(--text-primary); }
+.detail-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.detail-tab-content {
+  display: none;
+}
+.detail-tab-content.active {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+/* ---------- Agent flow / decision room (legacy compat) ---------- */
 .agent-flow { display: flex; flex-direction: column; gap: 10px; }
 .agent-card {
   display: flex; align-items: center; justify-content: space-between;
@@ -108,3 +581,5 @@
 .journal-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
 .journal-time { font-size: 11.5px; color: var(--text-tertiary); width: 70px; flex-shrink: 0; padding-top: 2px; }
 .journal-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

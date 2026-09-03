@@ -2,13 +2,16 @@
 
 # 🛡️ AlphaGuard AI
 
-### Autonomous · Explainable · Risk-First AI Trading Platform
+### Autonomous · Explainable · Risk-First AI Options Trading Platform
 
 **Built for the [Alpaca AI Trading Agents Hackathon](https://alpaca.markets)**
 
 > **AI PROPOSES · RISK PROTECTS · ALPACA EXECUTES · EVERY DECISION IS EXPLAINABLE**
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
+[![Alpaca Trading API](https://img.shields.io/badge/Alpaca-Trading%20API-yellow.svg)](https://alpaca.markets)
+[![Alpaca MCP Server](https://img.shields.io/badge/Alpaca-MCP%20Server-blueviolet.svg)](https://github.com/alpacahq/alpaca-mcp-server)
+[![Options Trading](https://img.shields.io/badge/Options-Trading-orange.svg)](#options-trading)
 [![Tests](https://img.shields.io/badge/tests-15%2F15%20passing-brightgreen.svg)](#running-tests)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -16,9 +19,18 @@
 
 ---
 
-AlphaGuard AI is an **8-agent AI Investment Committee** that researches market opportunities, debates its own trade thesis (bull vs. bear), enforces **deterministic, LLM-independent risk controls**, executes approved trades through **Alpaca paper trading**, monitors open positions autonomously, and learns from outcomes through automated AI post-mortems.
+AlphaGuard AI is an **8-agent AI Investment Committee** that researches market opportunities, debates its own trade thesis (bull vs. bear), enforces **deterministic, LLM-independent risk controls**, executes approved **options trades** through **Alpaca paper trading**, monitors open positions autonomously, and learns from outcomes through automated AI post-mortems.
 
 This is not "an AI that predicts stock prices." The LLM **never** has unrestricted trading authority — every single proposal must pass a Python risk engine before it can reach Alpaca.
+
+### 🏆 Hackathon Compliance
+
+| Requirement | Implementation | Status |
+|---|---|---|
+| **Alpaca Trading API** | `alpaca-py` SDK — orders, positions, account, market data | ✅ |
+| **Alpaca MCP Server** | Official `alpaca-mcp-server` via `uvx` over stdio — Market Analyst pulls live account context | ✅ |
+| **Options Trading** | Full options flow — `OptionHistoricalDataClient`, `get_option_chain`, contract selection, OCC symbol execution | ✅ |
+| **Dedicated Paper Account** | Fresh paper trading account created for this submission | ✅ |
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -120,17 +132,19 @@ Every feature listed below was exercised end-to-end against the running applicat
 | 2 | Deterministic risk engine — approves good trades, rejects bad ones with exact reasons | ✅ |
 | 3 | Deterministic quant engine (SMA/EMA/RSI/MACD/Bollinger/ATR/volatility) — real math | ✅ |
 | 4 | Alpaca paper-trading service with automatic demo-mode fallback | ✅ |
-| 5 | AI provider abstraction (OpenAI/Anthropic/Gemini) with demo fallback | ✅ |
-| 6 | Full trade lifecycle: scan → analyze → decide → risk check → execute → monitor → close | ✅ |
-| 7 | AI Post-Mortem after every closed trade | ✅ |
-| 8 | Apple-inspired "Liquid Glass" UI with animated agent flow | ✅ |
-| 9 | Chart.js equity curves and execution timelines | ✅ |
-| 10 | Authentication with hashed passwords (Flask-Login) | ✅ |
-| 11 | APScheduler background position monitor (stop-loss / take-profit) | ✅ |
-| 12 | Strategy Lab historical backtester (SMA crossover) | ✅ |
-| 13 | Full audit trail / AI Journal | ✅ |
-| 14 | Real-time UI updates via WebSocket (no manual refresh) | ✅ |
-| 15 | Comprehensive test suite (risk engine, indicators, position sizing, auth, demo mode) | ✅ |
+| 5 | **Alpaca MCP Server** — Market Analyst agent pulls live account context via official `alpaca-mcp-server` | ✅ |
+| 6 | **Options trading** — real option chains, contract selection, OCC symbol execution | ✅ |
+| 7 | AI provider abstraction (OpenAI/Anthropic/Gemini) with demo fallback | ✅ |
+| 8 | Full trade lifecycle: scan → analyze → decide → risk check → execute → monitor → close | ✅ |
+| 9 | AI Post-Mortem after every closed trade | ✅ |
+| 10 | Apple-inspired "Liquid Glass" UI with animated agent flow | ✅ |
+| 11 | Chart.js equity curves and execution timelines | ✅ |
+| 12 | Authentication with hashed passwords (Flask-Login) | ✅ |
+| 13 | APScheduler background position monitor (stop-loss / take-profit) | ✅ |
+| 14 | Strategy Lab historical backtester (SMA crossover) | ✅ |
+| 15 | Full audit trail / AI Journal | ✅ |
+| 16 | Real-time UI updates via WebSocket (no manual refresh) | ✅ |
+| 17 | Comprehensive test suite (risk engine, indicators, position sizing, auth, demo mode) | ✅ |
 
 ---
 
@@ -142,19 +156,39 @@ Every feature listed below was exercised end-to-end against the running applicat
 
 2. **Risk Layer** — A pure-Python `RiskEngine` class that is **100% independent of any LLM**. Ten deterministic checks (stop-loss validity, risk/reward ratio, confidence threshold, position sizing, buying power, max open positions, duplicate exposure, daily loss limit, portfolio drawdown, capital requirement) must all pass before any order reaches Alpaca. The AI cannot bypass this gate.
 
-3. **Execution Layer** — The Alpaca paper-trading client submits market orders, tracks positions, and monitors stop-loss/take-profit levels via an APScheduler background job. Automatically degrades to clearly-labeled demo mode if Alpaca credentials are missing or a call fails.
+3. **Execution Layer** — The Alpaca paper-trading client submits market orders (including options with OCC symbols), tracks positions, and monitors stop-loss/take-profit levels via an APScheduler background job. Automatically degrades to clearly-labeled demo mode if Alpaca credentials are missing or a call fails.
+
+### Alpaca Integration
+
+| Product | How It's Used | File |
+|---------|---------------|------|
+| **Alpaca Trading API** (`alpaca-py`) | Submit orders, get account/positions/orders, close positions | `broker/client.py` |
+| **Alpaca Options Data API** | `OptionHistoricalDataClient` — fetch option chains, strikes, expirations, latest premiums | `broker/client.py` |
+| **Alpaca MCP Server** (official) | Market Analyst agent connects to `alpaca-mcp-server` over stdio via MCP protocol to pull live account context (equity, buying power, positions) into its analysis | `services/mcp_client.py`, `agents/market_agent.py` |
+
+### Options Trading Flow
+
+```
+Strategy Agent
+  → alpaca_service.get_option_chain(ticker)     # Fetch available contracts
+  → Select ATM call/put based on market regime
+  → alpaca_service.get_latest_option_price()    # Price the contract
+  → Build proposal with OCC symbol (e.g. AAPL260918C00230000)
+  → Risk Engine validates option-specific fields
+  → Trade Executor submits order with OCC symbol via Alpaca API
+```
 
 ### The 8 Agents
 
 | Agent | Role | Uses AI? |
 |-------|------|----------|
-| **Market Analyst** | Trend/regime classification (Trending Up/Down/Ranging) | ✅ (with deterministic fallback) |
+| **Market Analyst** | Trend/regime classification + live account context via **Alpaca MCP Server** | ✅ (with deterministic fallback) |
 | **Quant Analyst** | Indicator computation + composite scoring | ❌ Pure math |
 | **News Intel** | Sentiment analysis + risk event detection | ✅ (demo mode by default) |
 | **Bull Agent** | Constructs the strongest case FOR the trade | ✅ (with deterministic fallback) |
 | **Bear Agent** | Attacks the trade thesis with counterarguments | ✅ (with deterministic fallback) |
 | **Alternative Agent** | Ranks all watchlist tickers — "is this really the best opportunity?" | ❌ Pure math |
-| **Strategy Agent** | Concrete entry/stop/target/size proposal | ✅ (with deterministic fallback) |
+| **Strategy Agent** | Selects optimal options contract + entry/stop/target/size | ✅ (with deterministic fallback) |
 | **Decision Agent** | Committee chair — final BUY/HOLD/NO TRADE vote | ❌ Deterministic rules |
 
 ### Risk Engine Checks (10 Gates)
@@ -200,8 +234,8 @@ alphaguard-ai/
 │   ├── decision_agent.py           #   Committee chair (final vote)
 │   └── postmortem_agent.py         #   Post-trade AI analysis
 │
-├── alpaca/                         # Alpaca paper-trading service
-│   └── client.py                   #   Full client with demo fallback
+├── broker/                         # Alpaca paper-trading service
+│   └── client.py                   #   Full client with demo fallback + CLI integration
 │
 ├── trading/                        # Core trading infrastructure
 │   ├── indicator_engine.py         #   SMA/EMA/RSI/MACD/BB/ATR/vol (pure math)
@@ -216,8 +250,12 @@ alphaguard-ai/
 ├── services/                       # External service abstractions
 │   ├── ai_service.py               #   OpenAI/Anthropic/Gemini + demo fallback
 │   ├── market_service.py           #   Alpaca bars → indicators → scores
+│   ├── mcp_client.py               #   Alpaca MCP Server client (JSON-RPC over stdio)
 │   ├── news_service.py             #   News API (demo mode by default)
 │   └── notification_service.py     #   Real-time notification dispatch
+│
+├── .agents/
+│   └── mcp_config.json             #   Official Alpaca MCP Server config (uvx)
 │
 ├── models/                         # SQLAlchemy data models
 │   ├── __init__.py                 #   db instance + model imports
@@ -288,6 +326,11 @@ alphaguard-ai/
 ALPACA_API_KEY=                     # Leave blank for demo mode
 ALPACA_SECRET_KEY=                  # Leave blank for demo mode
 ALPACA_BASE_URL=https://paper-api.alpaca.markets
+
+# ==== Alpaca MCP Server ====
+# Enables the Market Analyst agent to pull live account context
+# from Alpaca's official MCP server (github.com/alpacahq/alpaca-mcp-server)
+USE_ALPACA_MCP=true                 # Set to true to enable MCP integration
 
 # ==== AI Provider ====
 # Supported: openai, anthropic, gemini
@@ -440,7 +483,9 @@ This platform is for **educational and experimental purposes only** and does not
 | Backend | Flask 3.0, Flask-SocketIO, Flask-Login, Flask-SQLAlchemy |
 | Database | SQLite (default, swappable via `DATABASE_URL`) |
 | AI | OpenAI / Anthropic / Gemini via REST (with full demo fallback) |
-| Broker | Alpaca paper trading via `alpaca-py` |
+| Broker | Alpaca paper trading via `alpaca-py` + Alpaca CLI (optional) |
+| MCP | Alpaca's official `alpaca-mcp-server` via `uvx` (JSON-RPC over stdio) |
+| Options | `OptionHistoricalDataClient` — chains, strikes, premiums, OCC symbols |
 | Scheduler | APScheduler (background position monitoring) |
 | Frontend | Jinja2 templates, vanilla CSS (Liquid Glass), vanilla JS |
 | Charts | Chart.js 4.x |

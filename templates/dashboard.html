@@ -20,6 +20,7 @@
   </div>
 </div>
 
+<!-- PORTFOLIO OVERVIEW -->
 <div class="grid grid-6 mb-16">
   <div class="glass-panel card hover-lift">
     <div class="card-title">Portfolio Value</div>
@@ -39,9 +40,9 @@
     <div class="card-sub">Since inception</div>
   </div>
   <div class="glass-panel card hover-lift">
-    <div class="card-title">Risk Score</div>
-    <div class="card-value">{{ risk_score }}/100</div>
-    <div class="card-sub">{{ 'Safe' if risk_score < 50 else ('Elevated' if risk_score < 80 else 'High') }}</div>
+    <div class="card-title">Drawdown</div>
+    <div class="card-value {{ 'text-danger' if drawdown_pct > 5 else 'text-success' }}">{{ drawdown_pct }}%</div>
+    <div class="card-sub">{{ 'Safe' if drawdown_pct < 3 else ('Elevated' if drawdown_pct < 7 else 'High') }}</div>
   </div>
   <div class="glass-panel card hover-lift">
     <div class="card-title">Open Positions</div>
@@ -49,28 +50,37 @@
     <div class="card-sub">Live monitoring</div>
   </div>
   <div class="glass-panel card hover-lift">
-    <div class="card-title">Cash</div>
-    <div class="card-value">${{ "%.0f"|format(account.cash) }}</div>
-    <div class="card-sub">Available</div>
+    <div class="card-title">Risk Utilization</div>
+    <div class="card-value">{{ risk_utilization }}%</div>
+    <div class="card-sub">
+      <div class="gauge-bar" style="margin:4px 0 0;"><div class="gauge-fill {{ 'safe' if risk_utilization < 50 else ('warning' if risk_utilization < 80 else 'critical') }}" style="width:{{ risk_utilization }}%"></div></div>
+    </div>
   </div>
 </div>
 
-<div class="grid grid-2">
-  <div class="glass-panel card">
+<div class="grid grid-3 mb-16">
+  <!-- OPEN POSITIONS with direction & % P/L -->
+  <div class="glass-panel card" style="grid-column: span 2;">
     <div class="section-title" style="font-size:16px;">Open Positions</div>
     <div class="section-sub">Live paper-trading positions</div>
     {% if open_positions %}
     <table class="data-table">
-      <thead><tr><th>Ticker</th><th>Qty</th><th>Entry</th><th>Current</th><th>P/L</th></tr></thead>
+      <thead><tr><th>Ticker</th><th>Direction</th><th>Qty</th><th>Entry</th><th>Current</th><th>P/L</th><th>P/L %</th></tr></thead>
       <tbody>
       {% for p in open_positions %}
+        {% set pl = (p.unrealized_pl or 0) %}
+        {% set pl_pct = (((p.current_price or 0) - (p.entry_price or 1)) / (p.entry_price or 1) * 100) %}
         <tr>
           <td><strong>{{ p.ticker }}</strong></td>
+          <td><span class="badge badge-accent">LONG</span></td>
           <td>{{ p.quantity }}</td>
           <td>${{ "%.2f"|format(p.entry_price or 0) }}</td>
           <td>${{ "%.2f"|format(p.current_price or 0) }}</td>
-          <td class="{{ 'text-success' if (p.unrealized_pl or 0) >= 0 else 'text-danger' }}">
-            {{ '+' if (p.unrealized_pl or 0) >= 0 else '' }}${{ "%.2f"|format(p.unrealized_pl or 0) }}
+          <td class="{{ 'text-success' if pl >= 0 else 'text-danger' }}">
+            {{ '+' if pl >= 0 else '' }}${{ "%.2f"|format(pl) }}
+          </td>
+          <td class="{{ 'text-success' if pl_pct >= 0 else 'text-danger' }}">
+            {{ '+' if pl_pct >= 0 else '' }}{{ "%.1f"|format(pl_pct) }}%
           </td>
         </tr>
       {% endfor %}
@@ -81,20 +91,50 @@
     {% endif %}
   </div>
 
+  <!-- PORTFOLIO EXPOSURE -->
   <div class="glass-panel card">
-    <div class="section-title" style="font-size:16px;">Recent Activity</div>
-    <div class="section-sub">Live AI Journal feed</div>
-    <div id="recent-events">
-    {% for e in recent_events %}
-      <div class="journal-item">
-        <div class="journal-time">{{ e.timestamp.strftime('%H:%M:%S') }}</div>
-        <div class="journal-dot" style="background: {{ '#17a673' if e.severity=='SUCCESS' else ('#d94f4f' if e.severity=='CRITICAL' else ('#c9891f' if e.severity=='WARNING' else '#5b5fef')) }};"></div>
-        <div style="font-size:13px;">{{ e.message }}</div>
+    <div class="section-title" style="font-size:16px;">Portfolio Exposure</div>
+    <div class="section-sub">Allocation by sector</div>
+    {% if sectors %}
+      {% for s in sectors %}
+      <div class="exposure-bar-wrap">
+        <div class="exposure-bar-label">
+          <span class="ebl-name">{{ s.name }}</span>
+          <span class="ebl-pct">{{ s.percent }}%</span>
+        </div>
+        <div class="exposure-bar-track">
+          <div class="exposure-bar-fill {{ s.name|lower }}" style="width:{{ s.percent }}%"></div>
+        </div>
       </div>
+      {% endfor %}
     {% else %}
-      <div class="empty-state">No activity yet. Click "Scan Market" to get started.</div>
-    {% endfor %}
+      <div class="exposure-bar-wrap">
+        <div class="exposure-bar-label">
+          <span class="ebl-name">CASH</span>
+          <span class="ebl-pct">100%</span>
+        </div>
+        <div class="exposure-bar-track">
+          <div class="exposure-bar-fill cash" style="width:100%"></div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- RECENT ACTIVITY -->
+<div class="glass-panel card">
+  <div class="section-title" style="font-size:16px;">Recent Activity</div>
+  <div class="section-sub">Live AI Journal feed</div>
+  <div id="recent-events">
+  {% for e in recent_events %}
+    <div class="journal-item">
+      <div class="journal-time">{{ e.timestamp.strftime('%H:%M:%S') }}</div>
+      <div class="journal-dot" style="background: {{ '#17a673' if e.severity=='SUCCESS' else ('#d94f4f' if e.severity=='CRITICAL' else ('#c9891f' if e.severity=='WARNING' else '#5b5fef')) }};"></div>
+      <div style="font-size:13px;">{{ e.message }}</div>
     </div>
+  {% else %}
+    <div class="empty-state">No activity yet. Click "Scan Market" to get started.</div>
+  {% endfor %}
   </div>
 </div>
 {% endblock %}

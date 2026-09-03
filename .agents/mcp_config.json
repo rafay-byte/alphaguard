@@ -1,12 +1,11 @@
 {
   "mcpServers": {
     "alpaca": {
-      "command": "npx",
-      "args": ["-y", "@ideadesignmedia/alpaca-mcp"],
+      "command": "uvx",
+      "args": ["alpaca-mcp-server"],
       "env": {
         "ALPACA_API_KEY": "${ALPACA_API_KEY}",
-        "ALPACA_API_SECRET": "${ALPACA_SECRET_KEY}",
-        "ALPACA_PAPER": "true"
+        "ALPACA_SECRET_KEY": "${ALPACA_SECRET_KEY}"
       }
     }
   }
