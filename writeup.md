@@ -1,4 +1,4 @@
-<![CDATA[# AlphaGuard AI - Hackathon 1-Page Write-Up
+# AlphaGuard AI - Hackathon 1-Page Write-Up
 
 ## Overview
 AlphaGuard AI is an autonomous, explainable options trading platform built for the Alpaca AI Trading Agents Hackathon. It solves a critical problem in AI-driven finance: **trust**. Rather than giving an LLM unrestricted access to a brokerage account, AlphaGuard separates *ideation* from *execution* using an 8-agent Investment Committee and a strict, deterministic Risk Engine.
@@ -38,4 +38,3 @@ We leverage Alpaca's full product suite — API, CLI, and MCP server — for dat
 - **Alpaca CLI Integration:** Trade execution can be routed through Alpaca's official CLI binary (`alpaca order submit --symbol <OCC_SYMBOL> --side buy --qty <N> --type market`) via subprocess, making every order auditable in the terminal. Controlled by `USE_ALPACA_CLI=true`. The SDK path remains as fallback.
 - **Alpaca MCP Server (Official):** The Market Analyst agent connects to Alpaca's official `alpaca-mcp-server` (github.com/alpacahq/alpaca-mcp-server) over stdio using the Model Context Protocol. It pulls live account context (equity, buying power, open positions) directly into the agent's analysis prompt, giving the AI portfolio awareness before recommending trades. Controlled by `USE_ALPACA_MCP=true`.
 - **Background Position Monitor:** An `APScheduler` job runs constantly, fetching live quotes via Alpaca to manage active options positions and trigger exits autonomously.
-]]>

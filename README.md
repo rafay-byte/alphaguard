@@ -1,4 +1,4 @@
-<![CDATA[<div align="center">
+<div align="center">
 
 # 🛡️ AlphaGuard AI
 
@@ -501,4 +501,3 @@ This platform is for **educational and experimental purposes only** and does not
 *AI proposes. Risk protects. Alpaca executes. Every decision is explainable.*
 
 </div>
-]]>
